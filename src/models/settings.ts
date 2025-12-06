@@ -4,6 +4,8 @@ export interface SettingsData {
   autoNextSpeaker: boolean;
   motionVotes?: boolean;
   motionsArePublic?: boolean;
+
+  autoCaucusTimer?: boolean;
 }
 
 export const DEFAULT_SETTINGS: Required<SettingsData> = {
@@ -11,5 +13,7 @@ export const DEFAULT_SETTINGS: Required<SettingsData> = {
   timersInSeparateColumns: false,
   autoNextSpeaker: false,
   motionVotes: false,
-  motionsArePublic: false
+  motionsArePublic: false,
+
+  autoCaucusTimer: false,
 };

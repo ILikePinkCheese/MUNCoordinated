@@ -51,6 +51,7 @@ import firebase from "firebase/compat/app";
 import {DragDropContext, Draggable, DraggableProvided, Droppable, DropResult} from "react-beautiful-dnd";
 import { Helmet } from 'react-helmet';
 import { getDatabase, ref } from 'firebase/database';
+import Committee from './Committee';
 
 interface Props extends RouteComponentProps<URLParameters> {
 }
@@ -67,8 +68,11 @@ interface State {
 export function NextSpeaking(props: {
   caucus?: CaucusData;
   speakerTimer: TimerData;
+  caucusTimer: TimerData;
+  committee?: CommitteeData;
   fref: firebase.database.Reference;
   autoNextSpeaker: boolean;
+  autoCaucusTimer: boolean;
 }) {
   // TODO: Bandaid - I don't think the hook types nicely with the compat patch
   const [user] = useAuthState(firebase.auth() as any);
@@ -117,6 +121,10 @@ export function NextSpeaking(props: {
 
     const queueHeadKey = Object.keys(q)[0];
 
+    const { 
+      autoCaucusTimer,
+    } = recoverSettings(props.committee);
+
     let queueHeadDetails = {};
 
     if (queueHeadKey) {
@@ -136,10 +144,13 @@ export function NextSpeaking(props: {
       history: props.fref.child('history'),
       speakingData: props.caucus.speaking,
       speaking: props.fref.child('speaking'),
-      timerData: props.speakerTimer,
-      timer: props.fref.child('speakerTimer'),
+      speakertimerData: props.speakerTimer,
+      speakertimer: props.fref.child('speakerTimer'),
+      caucustimerData: props.caucusTimer,
+      caucustimer: props.fref.child('caucusTimer'),
       yielding: false,
-      timerResetSeconds: speakerSeconds
+      timerResetSeconds: speakerSeconds,
+      autoCaucusTimer: autoCaucusTimer
     };
 
     runLifecycle({...lifecycle, ...queueHeadDetails});
@@ -155,6 +166,14 @@ export function NextSpeaking(props: {
       timer: props.speakerTimer,
       skew
     });
+
+    if (!props.caucusTimer.ticking) {
+      toggleTicking({
+      timerFref: props.fref.child('caucusTimer'),
+      timer: props.caucusTimer,
+      skew
+    })
+    }
   };
 
   const {caucus} = props;
@@ -264,6 +283,7 @@ export function NextSpeaking(props: {
         queueFref={props.fref.child('queue')}
         speaking={caucus ? caucus.speaking : undefined}
         speakerTimer={props.speakerTimer}
+        caucusTimer={props.caucusTimer}
       />
     </Segment>
   );
@@ -285,11 +305,17 @@ class SpeakerFeedEntry extends React.PureComponent<{
   speaking?: SpeakerEvent,
   fref: firebase.database.Reference,
   speakerTimer: TimerData,
+  caucusTimer: TimerData,
   draggableProvided?: DraggableProvided
+  committee?: CommitteeData;
 }> {
 
   yieldHandler = () => {
-    const {fref, data, speakerTimer, speaking} = this.props;
+    const {fref, data, speakerTimer, caucusTimer, speaking} = this.props;
+
+    const { 
+      autoCaucusTimer,
+    } = recoverSettings(this.props.committee);
 
     const queueHeadDetails = {
       queueHeadData: data,
@@ -307,10 +333,13 @@ class SpeakerFeedEntry extends React.PureComponent<{
       history: caucusRef.child('history'),
       speaking: caucusRef.child('speaking'),
       speakingData: speaking,
-      timerData: speakerTimer,
-      timer: caucusRef.child('speakerTimer'),
+      speakertimerData: speakerTimer,
+      speakertimer: caucusRef.child('speakerTimer'),
+      caucustimerData: caucusTimer,
+      caucustimer: caucusRef.child('caucusTimer'),
       yielding: true,
-      timerResetSeconds: 0 // this shouldn't ever be used when yielding
+      timerResetSeconds: 0, // this shouldn't ever be used when yielding
+      autoCaucusTimer: autoCaucusTimer
     };
 
     runLifecycle({...lifecycle, ...queueHeadDetails});
@@ -368,9 +397,10 @@ function SpeakerFeed(props: {
   data?: Record<string, SpeakerEvent>,
   queueFref: firebase.database.Reference,
   speaking?: SpeakerEvent,
-  speakerTimer: TimerData
+  speakerTimer: TimerData,
+  caucusTimer: TimerData
 }) {
-  const {data, queueFref, speaking, speakerTimer} = props;
+  const {data, queueFref, speaking, speakerTimer, caucusTimer} = props;
   // TODO: Bandaid - I don't think the hook types nicely with the compat patch
   const [user] = useAuthState(firebase.auth() as any);
 
@@ -387,6 +417,7 @@ function SpeakerFeed(props: {
             fref={queueFref.child(key)}
             speaking={speaking}
             speakerTimer={speakerTimer}
+            caucusTimer={caucusTimer}
           />
         }
       </Draggable>
@@ -617,7 +648,7 @@ export default class Caucus extends React.Component<Props, State> {
   }
 
   renderNowSpeaking =  (caucus?: CaucusData) => {
-    const { speakerTimer } = this.state;
+    const { speakerTimer, caucusTimer } = this.state;
     
     const caucusFref = this.recoverCaucusFref();
 
@@ -627,7 +658,7 @@ export default class Caucus extends React.Component<Props, State> {
       <Segment loading={!caucus}>
         <Label attached="top left" size="large">Now speaking</Label>
         <Feed size="large">
-          <SpeakerFeedEntry data={entryData} fref={caucusFref.child('speaking')} speakerTimer={speakerTimer}/>
+          <SpeakerFeedEntry data={entryData} fref={caucusFref.child('speaking')} speakerTimer={speakerTimer} caucusTimer={caucusTimer}/>
         </Feed>
       </Segment>
     );
@@ -643,7 +674,7 @@ export default class Caucus extends React.Component<Props, State> {
 
   renderCaucus = (caucus?: CaucusData) => {
     const { renderNowSpeaking, renderHeader, recoverCaucusFref } = this;
-    const { speakerTimer, committee } = this.state;
+    const { speakerTimer, caucusTimer, committee } = this.state;
 
     const { caucusID } = this.props.match.params;
     const caucusFref = recoverCaucusFref();
@@ -677,7 +708,8 @@ export default class Caucus extends React.Component<Props, State> {
     const { 
       autoNextSpeaker, 
       timersInSeparateColumns,
-      moveQueueUp
+      moveQueueUp,
+      autoCaucusTimer
     } = recoverSettings(committee);
 
     const header = (
@@ -700,8 +732,10 @@ export default class Caucus extends React.Component<Props, State> {
       <NextSpeaking
         caucus={caucus} 
         fref={caucusFref} 
-        speakerTimer={speakerTimer} 
+        speakerTimer={speakerTimer}
+        caucusTimer={caucusTimer} 
         autoNextSpeaker={autoNextSpeaker}
+        autoCaucusTimer={autoCaucusTimer}
       />
     );
 
