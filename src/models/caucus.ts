@@ -169,8 +169,8 @@ export const runLifecycle = (lifecycle: Lifecycle) => {
       remaining : caucustimerData.remaining,
       ticking: false  // stop caucus timer alongside speaker timer
     });
+    }
 
     queueHead.set(null);
   }
-}
 };
