@@ -53,8 +53,8 @@ export function recoverSettings(committee?: CommitteeData): Required<SettingsDat
     ?? DEFAULT_SETTINGS.motionsArePublic;
 
   const autoCaucusTimer: boolean =
-  committee?.settings.autoCaucusTimer
-  ?? DEFAULT_SETTINGS.autoCaucusTimer;
+    committee?.settings.autoCaucusTimer
+    ?? DEFAULT_SETTINGS.autoCaucusTimer;
 
   return {
     timersInSeparateColumns,

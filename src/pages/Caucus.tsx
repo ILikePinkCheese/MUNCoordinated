@@ -144,10 +144,10 @@ export function NextSpeaking(props: {
       history: props.fref.child('history'),
       speakingData: props.caucus.speaking,
       speaking: props.fref.child('speaking'),
-      speakertimerData: props.speakerTimer,
-      speakertimer: props.fref.child('speakerTimer'),
-      caucustimerData: props.caucusTimer,
-      caucustimer: props.fref.child('caucusTimer'),
+      speakerTimerData: props.speakerTimer,
+      speakerTimer: props.fref.child('speakerTimer'),
+      caucusTimerData: props.caucusTimer,
+      caucusTimer: props.fref.child('caucusTimer'),
       yielding: false,
       timerResetSeconds: speakerSeconds,
       autoCaucusTimer: autoCaucusTimer
@@ -333,10 +333,10 @@ class SpeakerFeedEntry extends React.PureComponent<{
       history: caucusRef.child('history'),
       speaking: caucusRef.child('speaking'),
       speakingData: speaking,
-      speakertimerData: speakerTimer,
-      speakertimer: caucusRef.child('speakerTimer'),
-      caucustimerData: caucusTimer,
-      caucustimer: caucusRef.child('caucusTimer'),
+      speakerTimerData: speakerTimer,
+      speakerTimer: caucusRef.child('speakerTimer'),
+      caucusTimerData: caucusTimer,
+      caucusTimer: caucusRef.child('caucusTimer'),
       yielding: true,
       timerResetSeconds: 0, // this shouldn't ever be used when yielding
       autoCaucusTimer: autoCaucusTimer
@@ -734,6 +734,7 @@ export default class Caucus extends React.Component<Props, State> {
         fref={caucusFref} 
         speakerTimer={speakerTimer}
         caucusTimer={caucusTimer} 
+        committee={committee}
         autoNextSpeaker={autoNextSpeaker}
         autoCaucusTimer={autoCaucusTimer}
       />
