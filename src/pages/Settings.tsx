@@ -76,6 +76,10 @@ export default class Settings extends React.Component<Props, State> {
             'timersInSeparateColumns',
             'Alternate arrangement with \'Speaker timer\' and \'Caucus timer\' in separate columns'
           )}
+          {renderSetting(
+            'autoCaucusTimer',
+            'Start and stop the \'Caucus timer\' alongside the \'Speaker timer\''
+          )}
           {/* {renderSetting(
             'autoNextSpeaker',
             'The next speaker will automatically be moved to the \'Now speaking\' position after the time has elapsed for the current speaker'

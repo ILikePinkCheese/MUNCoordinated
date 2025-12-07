@@ -110,34 +110,45 @@ export interface Lifecycle {
   history: firebase.database.Reference;
   speakingData?: SpeakerEvent;
   speaking: firebase.database.Reference;
-  timerData: TimerData;
-  timer: firebase.database.Reference;
+  speakerTimerData: TimerData;
+  speakerTimer: firebase.database.Reference;
+  caucusTimerData: TimerData;
+  caucusTimer: firebase.database.Reference;
   yielding: boolean;
   queueHeadData?: SpeakerEvent;
   queueHead?: firebase.database.Reference;
   timerResetSeconds: number;
+  autoCaucusTimer: boolean;
 }
 
 export const runLifecycle = (lifecycle: Lifecycle) => {
-  const { history, speakingData, speaking, timerData, timer, 
-    timerResetSeconds, yielding, queueHeadData, queueHead } = lifecycle;
+  const { history, speakingData, speaking, speakerTimerData, speakerTimer, caucusTimerData, caucusTimer, 
+    timerResetSeconds, yielding, queueHeadData, queueHead, autoCaucusTimer} = lifecycle;
 
   let additionalYieldTime = 0;
 
   // Move the person currently speaking into history...
   if (speakingData) {
-    history.push().set({ ...speakingData, duration: timerData.elapsed });
+    history.push().set({ ...speakingData, duration: speakerTimerData.elapsed });
     speaking.set(null);
 
     if (yielding) {
-      additionalYieldTime = timerData.remaining;
+      additionalYieldTime = speakerTimerData.remaining;
     }
 
-    timer.update({
+    speakerTimer.update({
       elapsed: 0,
       remaining: timerResetSeconds,
       ticking: false // and stop it
     });
+
+    if (autoCaucusTimer) {
+      caucusTimer.update({
+      elapsed : caucusTimerData.elapsed,
+      remaining : caucusTimerData.remaining,
+      ticking: false  // stop caucus timer alongside speaker timer
+    });
+    }
   } // do nothing if no-one is currently speaking
 
   if (queueHead && queueHeadData) {
@@ -146,11 +157,19 @@ export const runLifecycle = (lifecycle: Lifecycle) => {
       duration: queueHeadData.duration + additionalYieldTime
     });
 
-    timer.update({
+    speakerTimer.update({
       elapsed: 0,
       remaining: queueHeadData.duration + additionalYieldTime, // load the appropriate time 
       ticking: false // and stop it
     });
+
+    if (autoCaucusTimer) {
+      caucusTimer.update({
+      elapsed : caucusTimerData.elapsed,
+      remaining : caucusTimerData.remaining,
+      ticking: false  // stop caucus timer alongside speaker timer
+    });
+    }
 
     queueHead.set(null);
   }

@@ -52,12 +52,17 @@ export function recoverSettings(committee?: CommitteeData): Required<SettingsDat
     committee?.settings.motionsArePublic
     ?? DEFAULT_SETTINGS.motionsArePublic;
 
+  const autoCaucusTimer: boolean =
+    committee?.settings.autoCaucusTimer
+    ?? DEFAULT_SETTINGS.autoCaucusTimer;
+
   return {
     timersInSeparateColumns,
     moveQueueUp,
     autoNextSpeaker,
     motionVotes,
-    motionsArePublic
+    motionsArePublic,
+    autoCaucusTimer
   };
 }
 
@@ -396,7 +401,7 @@ export const pushTemplateMembers = (committeeID: CommitteeID, template: Template
     );
 
     [...TEMPLATE_TO_MEMBERS[template]]
-      // Don't try and readd members that already exist
+      // Don't try and read members that already exist
       .filter(member => !_.includes(memberNames, member.name))
       .forEach(
         member =>
